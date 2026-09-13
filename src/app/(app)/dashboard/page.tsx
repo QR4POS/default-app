@@ -1,4 +1,6 @@
 import { getSessionProfile } from "@/lib/supabase/queries";
+import { getInitials } from "@/lib/name";
+import { roleLabel } from "@/lib/auth/roles";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -10,14 +12,6 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { siteConfig } from "@/lib/site";
-
-function initials(name?: string | null, email?: string | null) {
-  const source = (name || email || "?").trim();
-  const parts = source.split(/[\s@]+/).filter(Boolean);
-  const first = parts[0]?.[0] ?? "?";
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
-  return `${first}${last}`.toUpperCase();
-}
 
 export default async function DashboardPage() {
   const session = await getSessionProfile();
@@ -56,14 +50,14 @@ export default async function DashboardPage() {
                   src={profile?.avatar_url ?? undefined}
                   alt=""
                 />
-                <AvatarFallback>{initials(name, user.email)}</AvatarFallback>
+                <AvatarFallback>{getInitials(name, user.email)}</AvatarFallback>
               </Avatar>
               <div>
                 <div className="flex items-center gap-2">
                   <p className="font-medium">{name}</p>
                   {profile?.role ? (
-                    <Badge variant="secondary" className="capitalize">
-                      {profile.role}
+                    <Badge variant="secondary">
+                      {roleLabel(profile.role)}
                     </Badge>
                   ) : null}
                 </div>

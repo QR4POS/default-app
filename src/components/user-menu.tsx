@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { signOutAction } from "@/lib/auth/actions";
+import { isSuperAdmin, roleLabel } from "@/lib/auth/roles";
+import { getInitials } from "@/lib/name";
 
 export interface UserMenuProps {
   email?: string | null;
@@ -27,16 +30,9 @@ export interface UserMenuProps {
   role?: string | null;
 }
 
-function initials(name?: string | null, email?: string | null) {
-  const source = (name || email || "?").trim();
-  const parts = source.split(/[\s@]+/).filter(Boolean);
-  const first = parts[0]?.[0] ?? "?";
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
-  return `${first}${last}`.toUpperCase();
-}
-
 export function UserMenu({ email, name, avatarUrl, role }: UserMenuProps) {
   const displayName = name || email || "Account";
+  const admin = isSuperAdmin(role);
 
   return (
     <DropdownMenu>
@@ -44,7 +40,7 @@ export function UserMenu({ email, name, avatarUrl, role }: UserMenuProps) {
         <Button variant="ghost" className="h-8 gap-2 px-2" aria-label="Account">
           <Avatar className="size-7">
             <AvatarImage src={avatarUrl ?? undefined} alt="" />
-            <AvatarFallback>{initials(name, email)}</AvatarFallback>
+            <AvatarFallback>{getInitials(name, email)}</AvatarFallback>
           </Avatar>
           <span className="hidden max-w-[10rem] truncate sm:inline-block">
             {displayName}
@@ -61,8 +57,8 @@ export function UserMenu({ email, name, avatarUrl, role }: UserMenuProps) {
               </span>
             ) : null}
             {role ? (
-              <Badge variant="secondary" className="w-fit capitalize">
-                {role}
+              <Badge variant="secondary" className="w-fit">
+                {roleLabel(role)}
               </Badge>
             ) : null}
           </div>
@@ -81,6 +77,14 @@ export function UserMenu({ email, name, avatarUrl, role }: UserMenuProps) {
               Settings
             </Link>
           </DropdownMenuItem>
+          {admin ? (
+            <DropdownMenuItem asChild>
+              <Link href="/admin/users">
+                <ShieldCheck className="size-4" />
+                Users & roles
+              </Link>
+            </DropdownMenuItem>
+          ) : null}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <form action={signOutAction}>

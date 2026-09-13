@@ -20,6 +20,10 @@ Tailwind CSS v4 · shadcn/ui · Supabase (`@supabase/ssr`)
   dashboard shell under `(app)` with a user menu + sign out
 - A `profiles` table with `role`, `handle_new_user` trigger, `updated_at`
   trigger, and Row Level Security — shipped as a migration
+- **Roles & admin**: the first user to sign up becomes `super_admin`; a
+  super-admin-only **Users & roles** page (`/admin/users`) lets you change any
+  user's role. `user` / `admin` / `super_admin`, with a DB guard so the last
+  super admin can't be demoted
 - Dark/light theme, toasts, and shadcn/ui components
 
 ---
@@ -103,8 +107,9 @@ src/
 │   ├── page.tsx              # public landing
 │   ├── (auth)/               # login, signup, forgot/reset password
 │   ├── auth/callback/route.ts# OAuth + email-link code exchange
-│   └── (app)/                # protected: layout w/ header, dashboard, settings
+│   └── (app)/                # protected: dashboard, settings, admin/users
 ├── components/
+│   ├── admin/                # role select control
 │   ├── auth/                 # forms + submit button + messages
 │   ├── ui/                   # shadcn/ui components
 │   ├── providers.tsx         # ThemeProvider + Toaster
@@ -116,19 +121,41 @@ src/
 │   │   ├── proxy.ts          # updateSession() used by src/proxy.ts
 │   │   ├── admin.ts          # getSupabaseAdmin() - service role (server only)
 │   │   └── queries.ts        # getSessionProfile() and friends
+│   ├── admin/
+│   │   └── actions.ts        # updateUserRole() (super admins only)
 │   ├── auth/
 │   │   ├── actions.ts        # server actions: sign in/up, reset, sign out
 │   │   ├── constants.ts      # MIN_PASSWORD_LENGTH
 │   │   ├── helpers.ts        # route classification + safe next-path
+│   │   ├── roles.ts          # UserRole, labels, isSuperAdmin()
 │   │   └── state.ts          # form action state types
 │   ├── env.ts                # zod-validated public env (fails fast)
+│   ├── name.ts               # getInitials()
 │   └── site.ts               # app name/url config
 └── types/database.ts         # typed Database (regenerate per project)
 
 supabase/
 ├── migrations/20260101000000_initial_schema.sql
+├── migrations/20260102000000_roles_and_admin.sql
 └── config.toml
 ```
+
+## Roles & permissions
+
+| Role          | Can do                                                        |
+| ------------- | ------------------------------------------------------------- |
+| `user`        | Use the app; read/update their own profile                    |
+| `admin`       | Reserved for app-specific powers (extend as needed)           |
+| `super_admin` | Everything above + view all users and change anyone's role    |
+
+- The **first user to sign up** is automatically `super_admin`.
+- On an existing project, pushing the `roles_and_admin` migration promotes the
+  earliest user to `super_admin` if none exists yet.
+- Role changes happen on **`/admin/users`** (super admins only) and are enforced
+  by app logic **and** RLS. A database trigger prevents demoting the last
+  super admin.
+- Add `admin`-level checks with `isSuperAdmin()` / `normalizeRole()` from
+  `src/lib/auth/roles.ts`, or write new RLS policies using `public.get_my_role()`.
 
 ## Making it your own
 

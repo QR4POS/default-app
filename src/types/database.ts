@@ -6,7 +6,11 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export interface Profile {
+/**
+ * Type aliases (not interfaces) are required here: Supabase's generic table
+ * constraints need an implicit index signature, which interfaces don't get.
+ */
+export type Profile = {
   id: string;
   email: string | null;
   full_name: string | null;
@@ -14,9 +18,9 @@ export interface Profile {
   role: string;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       profiles: {
@@ -42,10 +46,10 @@ export interface Database {
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
-}
+};
 
 /**
  * Keep types in sync with the real database after linking a project:
  *   supabase link --project-ref <ref>
- *   supabase gen types typescript --local > src/types/database.ts
+ *   supabase gen types typescript --linked > src/types/database.ts
  */
