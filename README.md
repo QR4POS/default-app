@@ -1,8 +1,8 @@
 # DefaultApp — Next.js + Supabase starter
 
-A production-ready starting point for every app you build. Clone it, point it
-at a fresh Supabase project, push the migration, and start building features —
-auth is already wired.
+A production-ready starting point for every app you build. Fork it, clone your
+fork, point it at a fresh Supabase project, push the migration, and start
+building features — auth is already wired.
 
 **Stack:** Next.js 16 (App Router, Turbopack) · React 19 · TypeScript ·
 Tailwind CSS v4 · shadcn/ui · Supabase (`@supabase/ssr`)
@@ -30,17 +30,32 @@ Tailwind CSS v4 · shadcn/ui · Supabase (`@supabase/ssr`)
 
 ## Create a new app from this template
 
-```bash
-# 1. Clone (change DefaultApp and the URL to your remote)
-git clone <your-remote-url> MyNewApp
-cd MyNewApp
+> **Do not commit to this template repo.** Always fork it and work on the fork
+> so the base template stays clean and reusable for future projects.
 
-# 2. Install
+### 1. Fork this repository
+
+Fork it on GitHub (or your Git host) into your own account/organization. Name
+the fork after the app you are about to build.
+
+### 2. Clone your fork
+
+```bash
+git clone <your-fork-url> MyNewApp
+cd MyNewApp
+```
+
+### 3. Set up the app
+
+```bash
+# Install dependencies
 npm install
 
-# 3. Set up Supabase
+# Create your local env file
 cp .env.example .env.local
 ```
+
+Then continue with the Supabase setup below.
 
 ### 3a. Create a hosted Supabase project
 
