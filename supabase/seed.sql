@@ -1,0 +1,2 @@
+-- Seed data for local development (supabase db reset). Empty by default.
+-- Add rows here if you want reference data available in every local reset.

@@ -1,36 +1,169 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DefaultApp — Next.js + Supabase starter
 
-## Getting Started
+A production-ready starting point for every app you build. Clone it, point it
+at a fresh Supabase project, push the migration, and start building features —
+auth is already wired.
 
-First, run the development server:
+**Stack:** Next.js 16 (App Router, Turbopack) · React 19 · TypeScript ·
+Tailwind CSS v4 · shadcn/ui · Supabase (`@supabase/ssr`)
+
+**Included:**
+
+- Email/password auth: sign up, sign in, forgot/reset password, change password
+- Google OAuth (add more providers in `src/components/auth/oauth-buttons.tsx`)
+- `@supabase/ssr` clients — browser, server, proxy — with token refresh handled
+  by the Next.js **Proxy** (`src/proxy.ts`) session guard
+- Route protection out of the box: `/`, `/login`, `/signup`,
+  `/forgot-password`, `/update-password`, `/auth/*` are public; everything else
+  requires a session
+- Public marketing landing (`/`), auth pages under `(auth)`, and a protected
+  dashboard shell under `(app)` with a user menu + sign out
+- A `profiles` table with `role`, `handle_new_user` trigger, `updated_at`
+  trigger, and Row Level Security — shipped as a migration
+- Dark/light theme, toasts, and shadcn/ui components
+
+---
+
+## Create a new app from this template
+
+```bash
+# 1. Clone (change DefaultApp and the URL to your remote)
+git clone <your-remote-url> MyNewApp
+cd MyNewApp
+
+# 2. Install
+npm install
+
+# 3. Set up Supabase
+cp .env.example .env.local
+```
+
+### 3a. Create a hosted Supabase project
+
+1. Create a project at https://supabase.com/dashboard (or `supabase projects create`).
+2. Get the **Project URL** and **anon key** from **Project Settings → API**
+   and paste them into `.env.local`.
+3. Get the **service_role** key too (server-only; never expose it).
+4. Link and push the schema:
+
+   ```bash
+   supabase login
+   supabase link --project-ref <your-project-ref>
+   supabase db push
+   ```
+
+### 3b. (Or) run Supabase locally with Docker
+
+```bash
+supabase start          # boots Postgres + Auth + Studio
+# then copy the printed anon key / URL into .env.local
+supabase db reset       # applies migrations + seed.sql
+```
+
+Regenerate `src/types/database.ts` against your linked remote project any time:
+
+```bash
+supabase link --project-ref <ref>
+supabase gen types typescript --linked > src/types/database.ts
+```
+
+### 4. Configure Auth in the Supabase dashboard
+
+Project Settings → Authentication:
+
+- **URL Configuration**: set Site URL to `http://localhost:3000` and add
+  `http://localhost:3000/auth/callback` to redirect URLs.
+- **Providers → Google**: enable, enter your OAuth Client ID/Secret from
+  https://console.cloud.google.com, and add your Supabase redirect URL to the
+  Google app's authorized redirect URIs.
+- **Email**: choose whether to require email confirmation. The UI handles both
+  (immediate session vs. "check your inbox").
+- **Settings**: set **Minimum password length** to `6` (or change
+  `MIN_PASSWORD_LENGTH` in `src/lib/auth/constants.ts` and
+  `minimum_password_length` in `supabase/config.toml` to match).
+- **Redirect URLs**: add both `http://localhost:3000/auth/callback` and your
+  deployed `https://<your-domain>/auth/callback`.
+
+### 5. Run it
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit http://localhost:3000 → sign up → you land on `/dashboard`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project structure
 
-## Learn More
+```
+src/
+├── proxy.ts                  # Next.js Proxy: session refresh + route guard
+├── app/
+│   ├── page.tsx              # public landing
+│   ├── (auth)/               # login, signup, forgot/reset password
+│   ├── auth/callback/route.ts# OAuth + email-link code exchange
+│   └── (app)/                # protected: layout w/ header, dashboard, settings
+├── components/
+│   ├── auth/                 # forms + submit button + messages
+│   ├── ui/                   # shadcn/ui components
+│   ├── providers.tsx         # ThemeProvider + Toaster
+│   └── user-menu.tsx         # avatar dropdown + sign out
+├── lib/
+│   ├── supabase/
+│   │   ├── client.ts         # browser client
+│   │   ├── server.ts         # server component / action client
+│   │   ├── proxy.ts          # updateSession() used by src/proxy.ts
+│   │   ├── admin.ts          # getSupabaseAdmin() - service role (server only)
+│   │   └── queries.ts        # getSessionProfile() and friends
+│   ├── auth/
+│   │   ├── actions.ts        # server actions: sign in/up, reset, sign out
+│   │   ├── constants.ts      # MIN_PASSWORD_LENGTH
+│   │   ├── helpers.ts        # route classification + safe next-path
+│   │   └── state.ts          # form action state types
+│   ├── env.ts                # zod-validated public env (fails fast)
+│   └── site.ts               # app name/url config
+└── types/database.ts         # typed Database (regenerate per project)
 
-To learn more about Next.js, take a look at the following resources:
+supabase/
+├── migrations/20260101000000_initial_schema.sql
+└── config.toml
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Making it your own
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Rename `package.json` → `name`, and edit `src/lib/site.ts` (name + url).
+2. Update `metadata`/SEO in `src/app/layout.tsx`.
+3. Extend `profiles` (columns, indexes) in a new migration under
+   `supabase/migrations/`.
+4. Add features as route groups inside `src/app/(app)/` — they inherit the
+   authenticated shell.
+5. Use the pattern in `lib/supabase/queries.ts` for server reads, and add
+   `role`-based helpers beside it when you introduce authorization.
 
-## Deploy on Vercel
+## Deploying
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`NEXT_PUBLIC_*` variables are inlined into the client bundle **at build time**,
+so you must set them in your hosting provider (e.g. Vercel → Environment
+Variables) *before* building, and rebuild after changing them:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SITE_URL` — your public origin, e.g. `https://app.example.com`.
+  Required for OAuth/email redirects to work in production.
+- `SUPABASE_SERVICE_ROLE_KEY` — server-only.
+
+If any of the three public variables are missing, the app throws a clear
+configuration error at startup (`src/lib/env.ts`) instead of failing silently.
+
+## Scripts
+
+| Command              | Description                      |
+| -------------------- | -------------------------------- |
+| `npm run dev`        | Start the dev server             |
+| `npm run build`      | Production build                 |
+| `npm run start`      | Run the production build         |
+| `npm run lint`       | ESLint                           |
+| `npm run typecheck`  | TypeScript type check (`tsc`)    |
+| `supabase db push`   | Apply migrations to linked project |
+| `supabase db reset`  | Reset + re-seed local database   |
